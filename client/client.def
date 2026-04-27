@@ -1,0 +1,9 @@
+LIBRARY SecureBridgeClient
+EXPORTS
+    InitializeDriver @1
+    CleanupDriver @2
+    ReadProcessMemorySecure @3
+    WriteProcessMemorySecure @4
+    GetModuleBaseSecure @5
+    HideProcessSecure @6
+    GetLastDriverError @7
