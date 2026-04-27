@@ -1,14 +1,14 @@
-# 🔒 SecureBridge - Kernel Driver Framework for External Game Memory Access
+#  SecureBridge - Kernel Driver Framework for External Game Memory Access
 
-## 📋 Overview
+##  Overview
 SecureBridge is a complete kernel-mode driver framework designed for external process memory access, specifically optimized for PUBG ESP (External Box ESP) rendering. The framework operates at Ring0 level, bypassing user-mode anti-cheat hooks through direct kernel memory operations, DKOM (Direct Kernel Object Manipulation), and callback removal techniques.
 
-## ⚠️ DISCLAIMER
+##  DISCLAIMER
 **This project is for educational purposes only. The techniques demonstrated are common in security research, reverse engineering, and Windows internals study. Use responsibly and only on systems you own or have explicit permission to test.**
 
 ---
 
-## 🏗️ Project Architecture
+##  Project Architecture
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
