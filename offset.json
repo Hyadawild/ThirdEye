@@ -1,0 +1,40 @@
+{
+  "version": "32.2.15.6",
+  "last_updated": "2026-04-28",
+  "offsets": {
+    "GNames": 1348096064,
+    "GObjects": 1377681928,
+    "UWorld": 961482176,
+    "LocalPlayer": 1001115560,
+    "EntityList": 1246835696,
+    "PlayerCount": 70651424,
+    "ViewMatrix": 1528977904,
+    "ActorPos": 416,
+    "ActorHealth": 704,
+    "ActorMaxHealth": 708,
+    "ActorName": 2272,
+    "ActorTeam": 4724,
+    "EntityDormant": 248,
+    "SkeletalMesh": 1056,
+    "ComponentToWorld": 480,
+    "RootComponent": 416,
+    "PlayerState": 1040,
+    "PlayerName": 2296
+  },
+  "bone_indices": {
+    "head": 68,
+    "neck": 67,
+    "chest": 36,
+    "pelvis": 1,
+    "left_shoulder": 9,
+    "right_shoulder": 38,
+    "left_elbow": 10,
+    "right_elbow": 39,
+    "left_wrist": 11,
+    "right_wrist": 40,
+    "left_knee": 23,
+    "right_knee": 55,
+    "left_foot": 24,
+    "right_foot": 56
+  }
+}

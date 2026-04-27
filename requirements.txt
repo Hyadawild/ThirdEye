@@ -1,0 +1,5 @@
+numpy==1.24.3
+pywin32==306
+comtypes==1.2.0
+pynput==1.7.6
+Pillow==10.0.0
