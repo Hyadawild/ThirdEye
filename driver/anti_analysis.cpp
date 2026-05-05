@@ -108,6 +108,45 @@ VOID ClearCallbacks() {
     // Simplified: Unregister any callbacks that might detect us
     // Full implementation would parse the callback lists and remove BE entries
 }
+// Disable ETW logging (prevents telemetry and anti-cheat logging)
+NTSTATUS DisableEtwLogging() {
+    NTSTATUS Status = STATUS_SUCCESS;
+    
+    // Find EtwEventWrite function in ntoskrnl
+    ULONG_PTR EtwEventWrite = FindFunction("EtwEventWrite");
+    
+    if (EtwEventWrite) {
+        // Patch first 5 bytes to return success (mov eax, 0; ret)
+        PUCHAR Patch = (PUCHAR)"\x31\xC0\xC3"; // xor eax, eax; ret
+        ULONG_PTR OldProtect = 0;
+        
+        __try {
+            // Remove write protection
+            PMDL Mdl = IoAllocateMdl((PVOID)EtwEventWrite, 3, FALSE, FALSE, NULL);
+            if (Mdl) {
+                MmProbeAndLockPages(Mdl, KernelMode, IoReadAccess);
+                PVOID Mapped = MmMapLockedPagesSpecifyCache(Mdl, KernelMode, 
+                                                            MmCached, NULL, FALSE, 
+                                                            NormalPagePriority);
+                if (Mapped) {
+                    memcpy(Mapped, Patch, 3);
+                    MmUnmapLockedPages(Mapped, Mdl);
+                }
+                MmUnlockPages(Mdl);
+                IoFreeMdl(Mdl);
+            }
+        }
+        __except(EXCEPTION_EXECUTE_HANDLER) {
+            Status = STATUS_ACCESS_VIOLATION;
+        }
+    }
+    
+    // Disable ETW providers for anti-cheat
+    // BattlEye uses provider: {6e3a9c0c-7b5f-47a5-9f2a-1e8e4f5c3b2a}
+    // This would require finding and disabling specific providers
+    
+    return Status;
+}
 
 // Disable PatchGuard and other protections
 VOID DisableProtection() {
@@ -119,6 +158,57 @@ VOID DisableProtection() {
     
     // Scan for g_CiOptions pattern in ci.dll
     // Set to 0x00 to disable signature enforcement (CiOptions & 0x8)
+}
+
+BOOLEAN IsFunctionHooked(PVOID FunctionAddress, PVOID ExpectedBytes, SIZE_T CompareSize) {
+    if (!FunctionAddress || !ExpectedBytes) {
+        return FALSE;
+    }
+    
+    for (SIZE_T i = 0; i < CompareSize; i++) {
+        if (((PUCHAR)FunctionAddress)[i] != ((PUCHAR)ExpectedBytes)[i]) {
+            // Check for common hook types
+            PUCHAR Byte = (PUCHAR)FunctionAddress + i;
+            
+            // Check for JMP (0xE9 or 0xEA or 0xFF25)
+            if (Byte[0] == 0xE9 || Byte[0] == 0xEA || 
+                (Byte[0] == 0xFF && Byte[1] == 0x25)) {
+                return TRUE;
+            }
+            
+            // Check for INT3 breakpoint
+            if (Byte[0] == 0xCC) {
+                return TRUE;
+            }
+        }
+    }
+    
+    return FALSE;
+}
+
+// Check for SSDT hooks
+BOOLEAN CheckSsdtHooks() {
+    BOOLEAN bHooked = FALSE;
+    
+    // Get KeServiceDescriptorTable (SSDT)
+    // This is a well-known pattern in ntoskrnl
+    ULONG_PTR KiSystemServiceStart = FindFunction("KiSystemServiceStart");
+    
+    if (KiSystemServiceStart) {
+        // Search for mov edx, offset KeServiceDescriptorTable pattern
+        // 8B 15 ?? ?? ?? ??
+        for (int i = 0; i < 100; i++) {
+            if (((PUCHAR)KiSystemServiceStart)[i] == 0x8B && 
+                ((PUCHAR)KiSystemServiceStart)[i+1] == 0x15) {
+                LONG Offset = *(PLONG)(KiSystemServiceStart + i + 2);
+                ULONG_PTR KiSystemServiceAddr = (ULONG_PTR)KiSystemServiceStart + i + 6 + Offset;
+                // SSDT found at KiSystemServiceAddr
+                break;
+            }
+        }
+    }
+    
+    return bHooked;
 }
 
 // Obfuscate strings at runtime
