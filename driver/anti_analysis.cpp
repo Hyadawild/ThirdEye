@@ -1,4 +1,79 @@
 #include "driver.h"
+#include <ntimage.h>
+#include <intrin.h>
+
+#pragma warning(disable: 4996)
+
+
+// Kernel debugger detection flags
+BOOLEAN g_KdDebuggerEnabled = FALSE;
+BOOLEAN g_KdPreviouslyEnabled = FALSE;
+ULONG_PTR g_KdDebuggerDataBlock = 0;
+
+// PatchGuard variables
+ULONG_PTR g_CiOptions = 0;
+ULONG_PTR g_CiOptionsAddress = 0;
+BOOLEAN g_PatchGuardDisabled = FALSE;
+
+// DPC Watchdog variables
+ULONG_PTR g_KiWaitNever = 0;
+ULONG_PTR g_KiWaitAlways = 0;
+BOOLEAN g_DPCWatchdogDisabled = FALSE;
+
+// ETW variables
+ULONG_PTR g_EtwProviderEnableMask = 0;
+ULONG_PTR g_EtwCallbackEntry = 0;
+
+// Callback arrays
+typedef struct _CALLBACK_ENTRY_ITEM {
+    LIST_ENTRY List;
+    PVOID CallbackRoutine;
+    PVOID Context;
+    ULONG_PTR Unknown;
+} CALLBACK_ENTRY_ITEM, *PCALLBACK_ENTRY_ITEM;
+
+// Kernel module information
+typedef struct _KLDR_DATA_TABLE_ENTRY {
+    LIST_ENTRY InLoadOrderLinks;
+    PVOID ExceptionTable;
+    ULONG ExceptionTableSize;
+    PVOID GpValue;
+    PVOID NonPagedDebugInfo;
+    PVOID DllBase;
+    PVOID EntryPoint;
+    ULONG SizeOfImage;
+    UNICODE_STRING FullDllName;
+    UNICODE_STRING BaseDllName;
+    ULONG Flags;
+    USHORT LoadCount;
+    USHORT TlsIndex;
+    LIST_ENTRY HashLinks;
+    ULONG TimeDateStamp;
+} KLDR_DATA_TABLE_ENTRY, *PKLDR_DATA_TABLE_ENTRY;
+
+// XOR key for string obfuscation
+#define XOR_KEY 0x7F
+#define XOR_KEY2 0xA5
+#define XOR_KEY3 0x3C
+
+// Single-byte XOR deobfuscation
+VOID XorDecryptString(PCHAR String, SIZE_T Length, UCHAR Key) {
+    for (SIZE_T i = 0; i < Length; i++) {
+        String[i] ^= Key;
+    }
+}
+
+// Multi-byte rolling XOR deobfuscation
+VOID RollingXorDecrypt(PCHAR String, SIZE_T Length, UCHAR Key, UCHAR Increment) {
+    UCHAR CurrentKey = Key;
+    for (SIZE_T i = 0; i < Length; i++) {
+        String[i] ^= CurrentKey;
+        CurrentKey += Increment;
+    }
+}
+
+// Obfuscated string macro (usage: OBFSTR("string"))
+#define OBFSTR(str) ObfuscateString(str, sizeof(str))
 
 // Check for kernel debugger
 VOID AntiDebugCheck() {
